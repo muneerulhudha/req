@@ -1,0 +1,24 @@
+[package]
+name = "req"
+version = "0.1.0"
+edition = "2021"
+description = "A terminal-native API client for testing HTTP services"
+license = "MIT"
+
+[[bin]]
+name = "req"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+crossterm = "0.27"
+dirs = "5.0"
+ratatui = "0.26"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+urlencoding = "2.1"
+
+[dev-dependencies]
+pretty_assertions = "1.4"
