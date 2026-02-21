@@ -2,7 +2,34 @@
 
 `req` is a terminal-native API client (Rust + ratatui) for testing HTTP APIs from your terminal.
 
-## Install once, run as `req`
+## Install on macOS (no Cargo required)
+
+`req` ships prebuilt macOS binaries on GitHub Releases.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/muneerulhudha/req/main/install.sh | bash
+```
+
+Then verify:
+
+```bash
+req --help
+```
+
+### Installer options
+
+- `REQ_INSTALL_OWNER` (default: `muneerulhudha`)
+- `REQ_INSTALL_REPO` (default: `req`)
+- `REQ_INSTALL_DIR` (default: `/usr/local/bin`)
+
+Example installing from a fork without sudo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/muneerulhudha/req/main/install.sh | \
+  REQ_INSTALL_OWNER=<YOUR_GITHUB_OWNER> REQ_INSTALL_REPO=req REQ_INSTALL_DIR="$HOME/.local/bin" bash
+```
+
+## Build from source (development)
 
 ```bash
 cargo install --path .
