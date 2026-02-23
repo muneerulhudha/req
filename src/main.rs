@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -32,12 +32,19 @@ fn main() -> Result<()> {
                     }
 
                     if app.input_mode {
+                        if key.modifiers.contains(KeyModifiers::CONTROL)
+                            && matches!(key.code, KeyCode::Char('s'))
+                        {
+                            app.apply_edit();
+                            continue;
+                        }
+
                         match key.code {
                             KeyCode::Esc => {
                                 app.input_mode = false;
                                 app.status = "Edit canceled".into();
                             }
-                            KeyCode::Enter => app.apply_edit(),
+                            KeyCode::Enter => app.input_buffer.push('\n'),
                             KeyCode::Backspace => {
                                 app.input_buffer.pop();
                             }
@@ -80,6 +87,10 @@ fn main() -> Result<()> {
                             }
                         }
                         KeyCode::Char('m') => app.cycle_method(),
+                        KeyCode::Char('f') => app.cycle_body_format(),
+                        KeyCode::Char('k') => app.cycle_common_header(),
+                        KeyCode::Char('a') => app.upsert_header(),
+                        KeyCode::Char('d') => app.remove_header(),
                         KeyCode::Char('s') => app.send(),
                         KeyCode::Char('w') => app.save_collection(),
                         KeyCode::Char('l') => {

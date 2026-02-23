@@ -9,6 +9,10 @@ pub struct ApiRequest {
     pub params_raw: String,
     pub headers_raw: String,
     pub body: String,
+    #[serde(default = "default_body_format")]
+    pub body_format: String,
+    #[serde(default)]
+    pub custom_content_type: String,
 }
 
 impl Default for ApiRequest {
@@ -20,8 +24,14 @@ impl Default for ApiRequest {
             params_raw: String::new(),
             headers_raw: String::new(),
             body: String::new(),
+            body_format: default_body_format(),
+            custom_content_type: String::new(),
         }
     }
+}
+
+fn default_body_format() -> String {
+    "none".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

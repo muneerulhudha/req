@@ -7,7 +7,7 @@ pub fn parse_map(raw: &str) -> BTreeMap<String, String> {
             if line.is_empty() || line.starts_with('#') {
                 return None;
             }
-            let (k, v) = line.split_once(':').or_else(|| line.split_once('='))?;
+            let (k, v) = line.split_once('=').or_else(|| line.split_once(':'))?;
             Some((k.trim().to_string(), v.trim().to_string()))
         })
         .collect()
