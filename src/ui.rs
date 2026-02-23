@@ -6,6 +6,16 @@ use ratatui::{
 
 use crate::app::{App, EditorField, Focus};
 
+fn status_color(status_code: u16) -> Color {
+    match status_code {
+        200..=299 => Color::Green,
+        300..=399 => Color::Blue,
+        400..=499 => Color::Yellow,
+        500..=599 => Color::Red,
+        _ => Color::Gray,
+    }
+}
+
 pub fn render(frame: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -16,7 +26,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         ])
         .split(frame.size());
 
-    let header = Paragraph::new("req — Terminal API Client | Tab focus | ↑/↓ navigate | E edit | M method | S send | W save | L load | H load history | C cURL | N new | R toggle body/headers | Q quit")
+    let header = Paragraph::new("req — Terminal API Client | Tab focus | ↑/↓ navigate | PgUp/PgDn scroll response | E edit | M method | S send | W save | L load | H load history | C cURL | N new | R toggle body/headers | Q quit")
         .style(Style::default().fg(Color::Yellow));
     frame.render_widget(header, chunks[0]);
 
@@ -167,27 +177,54 @@ pub fn render(frame: &mut Frame, app: &App) {
     } else {
         "Response Body"
     };
-    let response_text = match (&app.response, app.response_mode_headers) {
-        (Some(r), false) => format!(
-            "Status: {} {} | {}ms | {}\n\n{}",
-            r.status_code, r.reason, r.elapsed_ms, r.content_type, r.body
-        ),
-        (Some(r), true) => {
-            let headers = r
-                .headers
-                .iter()
-                .map(|(k, v)| format!("{}: {}", k, v))
-                .collect::<Vec<_>>()
-                .join("\n");
-            format!("Status: {} {}\n\n{}", r.status_code, r.reason, headers)
+    let (response_lines, response_block_style) = match (&app.response, app.response_mode_headers) {
+        (Some(r), false) => {
+            let color = status_color(r.status_code);
+            let mut lines = vec![Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Cyan)),
+                Span::styled(
+                    format!("{} {}", r.status_code, r.reason),
+                    Style::default().fg(color).add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(format!(" | {}ms | {}", r.elapsed_ms, r.content_type)),
+            ])];
+            lines.push(Line::from(""));
+            lines.extend(r.body.lines().map(|line| Line::from(line.to_string())));
+            (lines, Style::default().fg(color))
         }
-        (None, _) => "No response yet. Press S to send request.".into(),
+        (Some(r), true) => {
+            let color = status_color(r.status_code);
+            let mut lines = vec![Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Cyan)),
+                Span::styled(
+                    format!("{} {}", r.status_code, r.reason),
+                    Style::default().fg(color).add_modifier(Modifier::BOLD),
+                ),
+            ])];
+            lines.push(Line::from(""));
+            lines.extend(
+                r.headers
+                    .iter()
+                    .map(|(k, v)| Line::from(format!("{}: {}", k, v))),
+            );
+            (lines, Style::default().fg(color))
+        }
+        (None, _) => (
+            vec![Line::from("No response yet. Press S to send request.")],
+            Style::default(),
+        ),
     };
 
     frame.render_widget(
-        Paragraph::new(response_text)
+        Paragraph::new(response_lines)
+            .scroll((app.response_scroll, 0))
             .wrap(Wrap { trim: false })
-            .block(Block::default().title(response_title).borders(Borders::ALL)),
+            .block(
+                Block::default()
+                    .title(response_title)
+                    .borders(Borders::ALL)
+                    .border_style(response_block_style),
+            ),
         body[2],
     );
 

@@ -95,8 +95,11 @@ fn main() -> Result<()> {
                         KeyCode::Char('n') => app.new_request(),
                         KeyCode::Char('c') => app.curl_preview(),
                         KeyCode::Char('r') => {
-                            app.response_mode_headers = !app.response_mode_headers
+                            app.response_mode_headers = !app.response_mode_headers;
+                            app.response_scroll = 0;
                         }
+                        KeyCode::PageUp => app.scroll_response_up(10),
+                        KeyCode::PageDown => app.scroll_response_down(10),
                         _ => {}
                     }
                 }

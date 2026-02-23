@@ -65,6 +65,7 @@ pub struct App {
     pub history_idx: usize,
     pub input_mode: bool,
     pub input_buffer: String,
+    pub response_scroll: u16,
 }
 
 impl App {
@@ -82,7 +83,16 @@ impl App {
             history_idx: 0,
             input_mode: false,
             input_buffer: String::new(),
+            response_scroll: 0,
         }
+    }
+
+    pub fn scroll_response_up(&mut self, amount: u16) {
+        self.response_scroll = self.response_scroll.saturating_sub(amount);
+    }
+
+    pub fn scroll_response_down(&mut self, amount: u16) {
+        self.response_scroll = self.response_scroll.saturating_add(amount);
     }
 
     pub fn cycle_method(&mut self) {
@@ -136,6 +146,7 @@ impl App {
                     "{} {} in {}ms",
                     resp.status_code, resp.reason, resp.elapsed_ms
                 );
+                self.response_scroll = 0;
                 self.response = Some(resp.clone());
                 self.state.history.push(HistoryEntry {
                     timestamp: Utc::now(),
@@ -211,6 +222,7 @@ impl App {
             headers: vec![],
             body: cmd,
         });
+        self.response_scroll = 0;
         self.status = "Generated cURL preview".into();
     }
 }
