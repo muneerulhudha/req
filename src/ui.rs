@@ -16,16 +16,16 @@ pub fn render(frame: &mut Frame, app: &App) {
         ])
         .split(frame.size());
 
-    let header = Paragraph::new("req — Terminal API Client | Tab focus | ↑/↓ navigate | E edit | M method | S send | W save | L load | H load history | C cURL | N new | R toggle body/headers | Q quit")
+    let header = Paragraph::new("req — Terminal API Client | Tab focus | ↑/↓ navigate | E edit | M method | F body format | K header key | A add/update header | D delete header | S send | W save | L load | H load history | C cURL | N new | R toggle body/headers | Q quit")
         .style(Style::default().fg(Color::Yellow));
     frame.render_widget(header, chunks[0]);
 
     let body = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(24),
-            Constraint::Percentage(38),
-            Constraint::Percentage(38),
+            Constraint::Percentage(22),
+            Constraint::Percentage(43),
+            Constraint::Percentage(35),
         ])
         .split(chunks[1]);
 
@@ -105,62 +105,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         &mut hist_state,
     );
 
-    let editor_lines = vec![
-        line_for(
-            "Name",
-            &app.request.name,
-            app.editor_field == EditorField::Name,
-        ),
-        line_for(
-            "Method",
-            &app.request.method,
-            app.editor_field == EditorField::Method,
-        ),
-        line_for(
-            "URL",
-            &app.request.url,
-            app.editor_field == EditorField::Url,
-        ),
-        Line::from(""),
-        line_for(
-            "Params",
-            &app.request.params_raw,
-            app.editor_field == EditorField::Params,
-        ),
-        Line::from(""),
-        line_for(
-            "Headers",
-            &app.request.headers_raw,
-            app.editor_field == EditorField::Headers,
-        ),
-        Line::from(""),
-        line_for(
-            "Body",
-            &app.request.body,
-            app.editor_field == EditorField::Body,
-        ),
-        Line::from(""),
-        line_for(
-            "Env",
-            &app.state.env_raw,
-            app.editor_field == EditorField::Env,
-        ),
-    ];
-
-    let edit_block = Block::default()
-        .title("Request Editor")
-        .borders(Borders::ALL)
-        .border_style(if matches!(app.focus, Focus::Editor) {
-            Style::default().fg(Color::Green)
-        } else {
-            Style::default()
-        });
-    frame.render_widget(
-        Paragraph::new(editor_lines)
-            .wrap(Wrap { trim: false })
-            .block(edit_block),
-        body[1],
-    );
+    render_request_editor(frame, app, body[1]);
 
     let response_title = if app.response_mode_headers {
         "Response Headers"
@@ -199,6 +144,113 @@ pub fn render(frame: &mut Frame, app: &App) {
     frame.render_widget(
         Paragraph::new(status).block(Block::default().title("Status").borders(Borders::ALL)),
         chunks[2],
+    );
+}
+
+fn render_request_editor(frame: &mut Frame, app: &App, area: Rect) {
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(6),
+            Constraint::Length(10),
+            Constraint::Min(10),
+            Constraint::Length(4),
+        ])
+        .split(area);
+
+    let top_lines = vec![
+        line_for(
+            "Name",
+            &app.request.name,
+            app.editor_field == EditorField::Name,
+        ),
+        line_for(
+            "Method",
+            &app.method_options(),
+            app.editor_field == EditorField::Method,
+        ),
+        line_for(
+            "URL",
+            &app.request.url,
+            app.editor_field == EditorField::Url,
+        ),
+        line_for(
+            "Params",
+            &app.request.params_raw,
+            app.editor_field == EditorField::Params,
+        ),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(top_lines).wrap(Wrap { trim: false }).block(
+            Block::default()
+                .title("Request Editor")
+                .borders(Borders::ALL),
+        ),
+        rows[0],
+    );
+
+    let header_lines = vec![
+        line_for(
+            "Header Key",
+            &app.header_key_input,
+            app.editor_field == EditorField::HeaderKey,
+        ),
+        line_for(
+            "Header Value",
+            &app.header_value_input,
+            app.editor_field == EditorField::HeaderValue,
+        ),
+        Line::from("  Tip: press K to cycle common headers, A to add/update, D to delete"),
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Active request headers:",
+            Style::default().fg(Color::Cyan),
+        )),
+        Line::from(app.request.headers_raw.clone()),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(header_lines)
+            .wrap(Wrap { trim: false })
+            .block(Block::default().title("Headers").borders(Borders::ALL)),
+        rows[1],
+    );
+
+    let body_lines = vec![
+        line_for(
+            "Format",
+            &app.body_format_label(),
+            app.editor_field == EditorField::BodyFormat,
+        ),
+        line_for(
+            "Custom Content-Type",
+            &app.request.custom_content_type,
+            app.editor_field == EditorField::CustomContentType,
+        ),
+        Line::from(Span::styled(
+            "Body (multiline; press E to edit, Ctrl+S to save while editing):",
+            Style::default().fg(Color::Cyan),
+        )),
+        Line::from(app.request.body.clone()),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(body_lines)
+            .wrap(Wrap { trim: false })
+            .block(Block::default().title("Body").borders(Borders::ALL)),
+        rows[2],
+    );
+
+    frame.render_widget(
+        Paragraph::new(line_for(
+            "Env",
+            &app.state.env_raw,
+            app.editor_field == EditorField::Env,
+        ))
+        .wrap(Wrap { trim: false })
+        .block(Block::default().title("Environment").borders(Borders::ALL)),
+        rows[3],
     );
 }
 
